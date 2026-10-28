@@ -1,8 +1,8 @@
 # InnerScore
 
-**Log what you got done each day as emojis, grouped into colored categories, and see how your weeks and months are trending.**
+**Log what you got done each day as emojis, grouped into colored categories, add notes and photos, and see how your weeks, months and years are trending.**
 
-InnerScore is a small, private web app. Each completed task is an emoji (🎹 piano, 🏀 basketball, 💻 coding …). Tasks belong to categories you create, each with its own color. The month calendar shows a colored bar per category per day, filled with that day's emojis, and the Trends tab shows your weekly and monthly totals, comparisons and streaks.
+InnerScore is a small, private web app. Each completed task is an emoji (🎹 piano, 🏀 basketball, 💻 coding …). Tasks belong to categories you create, each with its own color. The month calendar shows a colored bar per category per day, filled with that day's emojis. Any completed task can carry a note and photos (the album you listened to, who you had dinner with …), and the Trends tab shows your weekly, monthly and yearly totals, comparisons and streaks.
 
 ▶️ **Open the app:** https://hanlinl2022-ops.github.io/innerscore/
 
@@ -11,9 +11,9 @@ No account, no sign-up, no ads. Your data stays on your device.
 <p align="center">
   <img src="docs/screenshots/calendar.jpg" width="240" alt="Month calendar with colored category bars full of emojis">
   &nbsp;
-  <img src="docs/screenshots/log-day.jpg" width="240" alt="Day editor: tap emojis to mark tasks done">
+  <img src="docs/screenshots/notes-day.jpg" width="240" alt="Day editor with notes and photos on completed tasks">
   &nbsp;
-  <img src="docs/screenshots/trends-month.jpg" width="240" alt="Monthly trends with stacked bar chart and activity heatmap">
+  <img src="docs/screenshots/trends-year.jpg" width="240" alt="Yearly trends with monthly chart and year activity grid">
 </p>
 
 ---
@@ -40,8 +40,9 @@ No account, no sign-up, no ads. Your data stays on your device.
 flowchart LR
     A["🎨 Create categories<br/>(name + color)"] --> B["😀 Add tasks<br/>(emoji + name)"]
     B --> C["📅 Each day, tap the<br/>emojis you completed"]
+    C --> N["📝 Optionally add a<br/>note & photos"]
     C --> D["🗓️ Month calendar fills<br/>with colored emoji bars"]
-    C --> E["📈 Trends: week & month<br/>totals, streaks, top tasks"]
+    C --> E["📈 Trends: week, month & year<br/>totals, streaks, top tasks"]
 ```
 
 | Concept | What it is | Example |
@@ -49,6 +50,7 @@ flowchart LR
 | **Category** | A color-coded group of tasks | 🟦 Study & Work, 🟩 Sport & Health |
 | **Task** | One emoji (plus an optional name) inside a category | 🎹 Piano, 📞 Phone call |
 | **Log** | Which tasks you completed on a given day | Oct 28: 💻 📝 📖 🎾 🎵 |
+| **Note** | Optional details and photos for one completed task on one day | 🎵 "Listened to *Kind of Blue*" + 2 photos |
 
 The app starts with four example categories (Study & Work, Sport & Health, Music, Social & Fun) so you can try it right away. Rename, recolor or delete them to make it yours.
 
@@ -131,6 +133,7 @@ The app has three tabs at the bottom: **Calendar**, **Trends** and **Categories*
 - Use the **month chips** (Jan … Dec) or the **‹ ›** arrows at the top to change month. The **date box** jumps back to today.
 - Today is highlighted with a filled circle.
 - **Tap any day** to open it and log or fix tasks, including past days.
+- A **📝** next to the day's total means at least one task that day has a note or photos.
 - Tap the floating **＋** button to log **today**.
 
 <br clear="right">
@@ -148,6 +151,23 @@ The app has three tabs at the bottom: **Calendar**, **Trends** and **Categories*
 
 <br clear="right">
 
+### 📝 Notes and photos on a completed task
+
+<p>
+  <img src="docs/screenshots/notes-day.jpg" width="240" alt="Completed tasks with notes and photo thumbnails">
+  &nbsp;
+  <img src="docs/screenshots/note-editor.jpg" width="240" alt="Note editor with text and photos">
+</p>
+
+Once a task is marked done, a row appears under its category: **"Add a note or photo for …"**. Tap it to:
+
+- **Write a note**, e.g. which music you listened to, who you had dinner with, what you read, your tennis score.
+- **＋ Add photos** from your camera roll or take one with the camera (you can pick several at once). Photos are automatically resized to save space.
+- **Tap a photo** to see it full-screen, or **✕** to remove it.
+- **Save** keeps it; **Cancel** (or ←) throws away the changes.
+
+The day view then shows the note text and photo thumbnails under each task. Un-marking a task that has a note asks first, because its note and photos for that day are deleted too.
+
 ### 📈 Trends: weekly and monthly
 
 <p>
@@ -156,20 +176,22 @@ The app has three tabs at the bottom: **Calendar**, **Trends** and **Categories*
   <img src="docs/screenshots/trends-month.jpg" width="240" alt="Monthly trends">
 </p>
 
-Switch between **Week** and **Month**, and use **‹ ›** to look at earlier periods.
+<img src="docs/screenshots/trends-year.jpg" width="240" alt="Yearly trends">
+
+Switch between **Week**, **Month** and **Year**, and use **‹ ›** to look at earlier periods.
 
 | Section | What it shows |
 |---|---|
 | **Tasks done** | Total for the period, with ↑/↓ % compared to the previous period |
 | **Per day** | Average tasks per day, and how many days you logged anything |
 | **🔥 Day streak** | Consecutive days with at least one task, up to today |
-| **Daily / Weekly completed tasks** | Stacked bar chart in your category colors: days of the week, or weeks of the month |
-| **Daily activity** (month) | Heatmap of the month; darker means more tasks that day |
+| **Daily / Weekly / Monthly completed tasks** | Stacked bar chart in your category colors: days of the week, weeks of the month, or months of the year |
+| **Daily activity** (month, year) | Heatmap: a calendar for the month, or a GitHub-style grid of all 365 days for the year; darker means more tasks that day |
 | **By category** | Each category's total, a bar to compare them, and its change vs the previous period |
 | **Top tasks** | Your most-completed emojis in the period |
-| **Last 12 weeks / months** | The long-term picture, stacked by category |
+| **Last 12 weeks / 12 months / 5 years** | The long-term picture, stacked by category |
 
-> 📏 **Fair comparisons:** while a week or month is still in progress, it's compared with the **same number of days** at the start of the previous one ("so far vs so far"), so a half-finished week doesn't look like a drop.
+> 📏 **Fair comparisons:** while a week, month or year is still in progress, it's compared with the **same number of days** at the start of the previous one ("so far vs so far"), so a half-finished week doesn't look like a drop.
 
 ### 🎨 Categories: make it yours
 
@@ -197,8 +219,8 @@ flowchart LR
 
 - **Everything is stored locally** in your browser on that device. Nothing is uploaded; there is no server or account.
 - Each device, and each browser on it, has **its own separate copy**. Logging on your phone won't appear on your laptop automatically.
-- **Back up regularly:** go to **Categories → Export backup**. This saves a `.json` file you can keep in Files, iCloud Drive, Google Drive, email, etc.
-- **Move to another device / restore:** **Categories → Import backup** and choose the file. ⚠️ Importing **replaces** all data on that device.
+- **Back up regularly:** go to **Categories → Export backup**. This saves a single `.json` file, **including your notes and photos**, that you can keep in Files, iCloud Drive, Google Drive, email, etc. Backups with many photos can be several MB.
+- **Move to another device / restore:** **Categories → Import backup** and choose the file. ⚠️ Importing **replaces** all data on that device, notes and photos included.
 - **Reset…** erases everything, and lets you start empty or with the example categories.
 
 > ⚠️ Clearing your browser's website data (Safari: *Settings → Safari → Clear History and Website Data*), or uninstalling the app, also erases InnerScore's data. Export a backup first.
@@ -208,7 +230,10 @@ flowchart LR
 ## FAQ
 
 **Is my data private?**
-Yes. It never leaves your device. The app is just static files; there is no backend, analytics or tracking.
+Yes. It never leaves your device, photos included. The app is just static files; there is no backend, analytics or tracking.
+
+**How many photos can I store?**
+Plenty for everyday use: photos are resized (max 1600 px) and stored in the browser's IndexedDB, which typically allows hundreds of MB or more. The app asks the browser to keep this storage persistent. Still, export a backup now and then.
 
 **Does it work without internet?**
 Yes, after you've opened it once. It caches itself for offline use.
@@ -238,6 +263,7 @@ icon.svg              App icon
 js/
   app.js              Tab routing and top bar
   store.js            Data model, localStorage persistence, export/import
+  photos.js           Photo storage in IndexedDB (resize, load, backup)
   calendar.js         Month grid
   day.js              Day editor (toggle tasks)
   trends.js           Weekly/monthly stats and SVG charts
@@ -253,8 +279,11 @@ docs/screenshots/     Images used in this README
 {
   "categories": [{ "id": "music", "name": "Music", "color": "#7b82d4" }],
   "tasks":      [{ "id": "k3j9x2", "categoryId": "music", "emoji": "🎹", "name": "Piano", "archived": false }],
-  "log":        { "2026-10-28": ["k3j9x2"] }
+  "log":        { "2026-10-28": ["k3j9x2"] },
+  "notes":      { "2026-10-28": { "k3j9x2": { "text": "Practiced Clair de Lune", "photos": ["a1b2c3d4e5f6"] } } }
 }
 ```
+
+Photo images are stored separately in IndexedDB (database `innerscore-photos`), keyed by photo id. Backup files add a `photoData` object mapping each photo id to a data URL.
 
 **Deploying changes:** commit and push to `main`; GitHub Pages republishes within a minute. When you change app files, bump `CACHE` in `sw.js` (e.g. `innerscore-v2`) so installed copies refresh promptly.

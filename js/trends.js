@@ -1,4 +1,4 @@
-// Weekly / monthly trends: stacked bars by category, comparisons, top emojis, streaks.
+// Weekly / monthly / yearly trends: stacked bars by category, comparisons, top emojis, streaks.
 import * as store from './store.js';
 import { MONTHS, dateKey, addDays, startOfWeek, today, shortDate, esc } from './util.js';
 
@@ -9,6 +9,9 @@ function periodOf(mode, anchor) {
     const start = startOfWeek(anchor);
     return { start, end: addDays(start, 6) };
   }
+  if (mode === 'year') {
+    return { start: new Date(anchor.getFullYear(), 0, 1), end: new Date(anchor.getFullYear(), 11, 31) };
+  }
   return {
     start: new Date(anchor.getFullYear(), anchor.getMonth(), 1),
     end: new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0),
@@ -16,9 +19,9 @@ function periodOf(mode, anchor) {
 }
 
 function shift(mode, anchor, n) {
-  return mode === 'week'
-    ? addDays(anchor, 7 * n)
-    : new Date(anchor.getFullYear(), anchor.getMonth() + n, 1);
+  if (mode === 'week') return addDays(anchor, 7 * n);
+  if (mode === 'year') return new Date(anchor.getFullYear() + n, 0, 1);
+  return new Date(anchor.getFullYear(), anchor.getMonth() + n, 1);
 }
 
 // Aggregates the log over [start, end] inclusive.
@@ -107,6 +110,26 @@ function niceStep(max) {
   return [1, 2, 5, 10].map((m) => m * p).find((s) => s >= raw);
 }
 
+// GitHub-style year grid: one column per week, one row per weekday, month labels on top.
+function yearHeat(perDay, start) {
+  const maxDay = Math.max(1, ...perDay.map((d) => d.total));
+  const lead = start.getDay();
+  const weeks = Math.ceil((lead + perDay.length) / 7);
+  const col = (i) => Math.floor((lead + i) / 7) + 1;
+  const labels = perDay
+    .map((d, i) => (d.date.getDate() === 1 ? `<span style="grid-column:${col(i)} / span 4">${MONTHS[d.date.getMonth()].slice(0, 3)}</span>` : ''))
+    .join('');
+  const cells = '<div style="background:none"></div>'.repeat(lead) + perDay.map((d) => {
+    const a = d.total / maxDay;
+    return `<div title="${shortDate(d.date)}: ${d.total}"${d.total ? ` style="background:color-mix(in srgb, var(--accent) ${Math.round(20 + a * 80)}%, transparent)"` : ''}></div>`;
+  }).join('');
+  return `<div class="year-heat" style="--weeks:${weeks}">
+      <div class="year-heat-months">${labels}</div>
+      <div class="year-heat-grid">${cells}</div>
+    </div>
+    <div class="heat-scale hint">Less <i></i><i style="--a:40%"></i><i style="--a:70%"></i><i style="--a:100%"></i> More</div>`;
+}
+
 export function renderTrends(view, rerender) {
   const cats = store.getCategories();
   const { mode, anchor } = ui;
@@ -126,12 +149,18 @@ export function renderTrends(view, rerender) {
 
   const label = mode === 'week'
     ? `${shortDate(start)} – ${shortDate(end)}${end.getFullYear() !== today().getFullYear() ? `, ${end.getFullYear()}` : ''}`
-    : `${MONTHS[start.getMonth()]} ${start.getFullYear()}`;
+    : mode === 'year' ? `${start.getFullYear()}` : `${MONTHS[start.getMonth()]} ${start.getFullYear()}`;
 
-  // Main chart buckets: days of the week, or weeks of the month.
+  // Main chart buckets: days of the week, weeks of the month, or months of the year.
   let buckets;
   if (mode === 'week') {
     buckets = cur.perDay.map((d) => ({ label: 'SMTWTFS'[d.date.getDay()], byCat: d.byCat }));
+  } else if (mode === 'year') {
+    buckets = MONTHS.map((m) => ({ label: chartW < 480 ? m[0] : m.slice(0, 3), byCat: {} }));
+    for (const d of cur.perDay) {
+      const b = buckets[d.date.getMonth()];
+      for (const [k, v] of Object.entries(d.byCat)) b.byCat[k] = (b.byCat[k] || 0) + v;
+    }
   } else {
     buckets = [];
     let i = 0;
@@ -147,13 +176,15 @@ export function renderTrends(view, rerender) {
     }
   }
 
-  // Long-term: last 12 weeks or 12 months ending at this period, stacked by category.
+  // Long-term: last 12 weeks, 12 months or 5 years ending at this period, stacked by category.
+  const longCount = mode === 'year' ? 5 : 12;
   const longBuckets = [];
-  for (let n = 11; n >= 0; n--) {
+  for (let n = longCount - 1; n >= 0; n--) {
     const p = periodOf(mode, shift(mode, anchor, -n));
     const s = summarize(p.start, p.end);
     longBuckets.push({
-      label: mode === 'week' ? `${p.start.getMonth() + 1}/${p.start.getDate()}` : MONTHS[p.start.getMonth()].slice(0, 3),
+      label: mode === 'week' ? `${p.start.getMonth() + 1}/${p.start.getDate()}`
+        : mode === 'year' ? `${p.start.getFullYear()}` : MONTHS[p.start.getMonth()].slice(0, 3),
       byCat: s.byCat,
     });
   }
@@ -177,6 +208,8 @@ export function renderTrends(view, rerender) {
         return `<div title="${shortDate(d.date)}: ${d.total}" style="${d.total ? `background:color-mix(in srgb, var(--accent) ${Math.round(20 + a * 80)}%, transparent);color:${a > 0.5 ? 'var(--bg)' : 'var(--text)'}` : ''}">${d.date.getDate()}</div>`;
       }).join('')
       + '</div>';
+  } else if (mode === 'year') {
+    heat = yearHeat(cur.perDay, start);
   }
 
   view.innerHTML = `
@@ -184,6 +217,7 @@ export function renderTrends(view, rerender) {
       <div class="seg">
         <button data-mode="week" class="${mode === 'week' ? 'active' : ''}">Week</button>
         <button data-mode="month" class="${mode === 'month' ? 'active' : ''}">Month</button>
+        <button data-mode="year" class="${mode === 'year' ? 'active' : ''}">Year</button>
       </div>
       <div class="period-nav">
         <button class="icon-btn" data-shift="-1" aria-label="Previous">‹</button>
@@ -198,12 +232,12 @@ export function renderTrends(view, rerender) {
       </div>
 
       <div class="card chart">
-        <h3>${mode === 'week' ? 'Daily' : 'Weekly'} completed tasks</h3>
+        <h3>${{ week: 'Daily', month: 'Weekly', year: 'Monthly' }[mode]} completed tasks</h3>
         ${cur.total ? stackedBars(buckets, cats, { width: chartW }) : '<p class="empty">Nothing logged in this period yet.</p>'}
         <div class="legend">${cats.map((c) => `<span><i class="dot" style="background:${c.color}"></i>${esc(c.name)}</span>`).join('')}</div>
       </div>
 
-      ${mode === 'month' ? `<div class="card"><h3>Daily activity</h3>${heat}</div>` : ''}
+      ${heat ? `<div class="card"><h3>Daily activity</h3>${heat}</div>` : ''}
 
       <div class="card">
         <h3>By category <span class="hint">${vsLabel}</span></h3>
@@ -227,7 +261,7 @@ export function renderTrends(view, rerender) {
       </div>
 
       <div class="card chart">
-        <h3>Last 12 ${mode === 'week' ? 'weeks' : 'months'}</h3>
+        <h3>Last ${longCount} ${mode}s</h3>
         ${stackedBars(longBuckets, cats, { width: chartW, height: 180 })}
       </div>
     </div>`;

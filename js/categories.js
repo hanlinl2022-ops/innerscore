@@ -34,7 +34,7 @@ export function renderCategories(view) {
 
       <div class="section-title">Data</div>
       <div class="card">
-        <p class="hint" style="margin-top:0">Your data is saved on this device only. Export a backup to keep it safe or move it to another device.</p>
+        <p class="hint" style="margin-top:0">Your data is saved on this device only. Export a backup to keep it safe or move it to another device. Backups include your notes and photos.</p>
         <div class="btn-row" style="justify-content:flex-start">
           <button class="btn" data-act="export">⬇️ Export backup</button>
           <button class="btn" data-act="import">⬆️ Import backup</button>
@@ -56,8 +56,8 @@ export function renderCategories(view) {
     taskForm({ categoryId: b.dataset.add, onDone: back })));
   view.querySelector('[data-act="newcat"]').addEventListener('click', () => categoryForm({ onDone: back }));
 
-  view.querySelector('[data-act="export"]').addEventListener('click', () => {
-    const blob = new Blob([store.exportJSON()], { type: 'application/json' });
+  view.querySelector('[data-act="export"]').addEventListener('click', async () => {
+    const blob = new Blob([await store.exportJSON()], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `innerscore-backup-${dateKey(today())}.json`;
@@ -69,16 +69,16 @@ export function renderCategories(view) {
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files[0];
     if (!file) return;
-    if (!confirm('Importing replaces all current categories, tasks and history. Continue?')) return;
+    if (!confirm('Importing replaces all current categories, tasks, history, notes and photos. Continue?')) return;
     try {
-      store.importJSON(await file.text());
+      await store.importJSON(await file.text());
       alert('Backup imported.');
     } catch (e) {
       alert(`Could not import: ${e.message}`);
     }
   });
   view.querySelector('[data-act="reset"]').addEventListener('click', () => {
-    if (!confirm('Erase ALL categories, tasks and history? Export a backup first if you want to keep them.')) return;
+    if (!confirm('Erase ALL categories, tasks, history, notes and photos? Export a backup first if you want to keep them.')) return;
     store.resetAll(confirm('Start with the sample categories? (Cancel = start completely empty)'));
   });
 }

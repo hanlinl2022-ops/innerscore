@@ -24,7 +24,7 @@ export function renderCalendar(view, { year, month }, setMonth) {
             title="${esc(g.category.name)}: ${esc(g.tasks.map((t) => t.name || t.emoji).join(', '))}">
             ${g.tasks.map((t) => t.emoji).join('')}
           </div>`).join('')}
-        ${total ? `<span class="count">${total}</span>` : ''}
+        ${total ? `<span class="count">${total}${store.hasNotes(key) ? ' 📝' : ''}</span>` : ''}
       </button>`);
   }
 

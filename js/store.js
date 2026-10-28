@@ -2,7 +2,9 @@
 //   categories: [{ id, name, color }]           (array order = display order)
 //   tasks:      [{ id, categoryId, emoji, name, archived }]
 //   log:        { "YYYY-MM-DD": [taskId, ...] }
+//   notes:      { "YYYY-MM-DD": { taskId: { text, photos: [photoId] } } }   (photo blobs live in IndexedDB)
 import { uid } from './util.js';
+import * as photos from './photos.js';
 
 const KEY = 'innerscore.v1';
 const listeners = new Set();
@@ -28,7 +30,7 @@ function seed() {
     t('social', '👫', 'Friends'), t('social', '👨‍👩‍👧', 'Family'), t('social', '🎮', 'Gaming'),
     t('social', '🍱', 'Eating out'), t('social', '📞', 'Phone call'),
   ];
-  return { categories: cats, tasks, log: {} };
+  return { categories: cats, tasks, log: {}, notes: {} };
 }
 
 function load() {
@@ -36,7 +38,7 @@ function load() {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const d = JSON.parse(raw);
-      if (d && Array.isArray(d.categories) && Array.isArray(d.tasks) && d.log) return d;
+      if (d && Array.isArray(d.categories) && Array.isArray(d.tasks) && d.log) return { notes: {}, ...d };
     }
   } catch { /* fall through to seed */ }
   return seed();
@@ -71,12 +73,38 @@ export function dayByCategory(key) {
     .filter((g) => g.tasks.length);
 }
 
+export const getNote = (key, taskId) => state.notes[key]?.[taskId] || null;
+export const hasNotes = (key) => !!state.notes[key];
+
 // ---------- writes ----------
 export function toggleTask(key, taskId) {
   const list = doneOn(key);
-  const next = list.includes(taskId) ? list.filter((id) => id !== taskId) : [...list, taskId];
+  const undoing = list.includes(taskId);
+  const next = undoing ? list.filter((id) => id !== taskId) : [...list, taskId];
   if (next.length) state.log[key] = next; else delete state.log[key];
+  if (undoing) dropNotes((k, tid) => k === key && tid === taskId);
   save();
+}
+
+// Saves the note for a logged task; an empty note is removed.
+export function setNote(key, taskId, { text, photos: photoIds }) {
+  const day = (state.notes[key] ||= {});
+  if (text || photoIds.length) day[taskId] = { text, photos: photoIds };
+  else delete day[taskId];
+  if (!Object.keys(day).length) delete state.notes[key];
+  save();
+}
+
+// Removes notes matching pred(dateKey, taskId) and deletes their photos. Caller saves.
+function dropNotes(pred) {
+  const gone = [];
+  for (const [k, day] of Object.entries(state.notes)) {
+    for (const [tid, n] of Object.entries(day)) {
+      if (pred(k, tid)) { gone.push(...n.photos); delete day[tid]; }
+    }
+    if (!Object.keys(day).length) delete state.notes[k];
+  }
+  photos.deletePhotos(gone);
 }
 
 export function addCategory(name, color) {
@@ -108,6 +136,7 @@ export function deleteCategory(id) {
     const next = state.log[k].filter((tid) => !taskIds.has(tid));
     if (next.length) state.log[k] = next; else delete state.log[k];
   }
+  dropNotes((k, tid) => taskIds.has(tid));
   save();
 }
 
@@ -129,26 +158,34 @@ export function deleteTask(id) {
     const next = state.log[k].filter((tid) => tid !== id);
     if (next.length) state.log[k] = next; else delete state.log[k];
   }
+  dropNotes((k, tid) => tid === id);
   save();
 }
 
 export const taskUsage = (id) => Object.values(state.log).filter((l) => l.includes(id)).length;
 
+export const noteCount = () => Object.values(state.notes).reduce((n, day) => n + Object.keys(day).length, 0);
+
 // ---------- backup ----------
-export function exportJSON() {
-  return JSON.stringify({ app: 'InnerScore', version: 1, exportedAt: new Date().toISOString(), ...state }, null, 2);
+// Backups embed photos as data URLs so a single file restores everything.
+export async function exportJSON() {
+  const ids = Object.values(state.notes).flatMap((day) => Object.values(day).flatMap((n) => n.photos));
+  const photoData = await photos.exportPhotos(ids);
+  return JSON.stringify({ app: 'InnerScore', version: 2, exportedAt: new Date().toISOString(), ...state, photoData });
 }
 
-export function importJSON(text) {
+export async function importJSON(text) {
   const d = JSON.parse(text);
   if (!Array.isArray(d.categories) || !Array.isArray(d.tasks) || typeof d.log !== 'object') {
     throw new Error('Not an InnerScore backup file');
   }
-  state = { categories: d.categories, tasks: d.tasks, log: d.log };
+  await photos.importPhotos(d.photoData);
+  state = { categories: d.categories, tasks: d.tasks, log: d.log, notes: d.notes || {} };
   save();
 }
 
-export function resetAll(withSamples) {
-  state = withSamples ? seed() : { categories: [], tasks: [], log: {} };
+export async function resetAll(withSamples) {
+  await photos.clearPhotos();
+  state = withSamples ? seed() : { categories: [], tasks: [], log: {}, notes: {} };
   save();
 }

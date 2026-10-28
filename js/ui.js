@@ -5,10 +5,13 @@ import { esc } from './util.js';
 const backdrop = document.getElementById('sheet-backdrop');
 const sheet = document.getElementById('sheet');
 let currentRender = null;
+let currentOnClose = null;
 
 // render(el) fills the sheet; it is re-run by refreshSheet() after data changes.
-export function openSheet(render) {
+// onClose runs only when the sheet is dismissed, not when another sheet replaces it.
+export function openSheet(render, { onClose } = {}) {
   currentRender = render;
+  currentOnClose = onClose || null;
   backdrop.hidden = false;
   render(sheet);
 }
@@ -18,8 +21,11 @@ export function refreshSheet() {
 }
 
 export function closeSheet() {
+  const onClose = currentOnClose;
   backdrop.hidden = true;
   currentRender = null;
+  currentOnClose = null;
+  onClose?.();
   sheet.innerHTML = '';
 }
 

@@ -1,9 +1,9 @@
 // Offline cache: network-first so updates show up, cache as fallback.
-const CACHE = 'innerscore-v1';
+const CACHE = 'innerscore-v2';
 const ASSETS = [
   './', 'index.html', 'styles.css', 'manifest.webmanifest', 'icon.svg',
   'js/app.js', 'js/store.js', 'js/util.js', 'js/ui.js', 'js/calendar.js', 'js/day.js',
-  'js/trends.js', 'js/categories.js',
+  'js/trends.js', 'js/categories.js', 'js/photos.js',
 ];
 
 self.addEventListener('install', (e) => {
